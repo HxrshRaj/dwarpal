@@ -1,0 +1,62 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+.mypy_cache/
+.pytest_cache/
+
+# Node
+node_modules/
+.next/
+out/
+frontend/.env.local
+
+# Data (large / downloaded — scripts reproduce these, not committed)
+data_pipeline/raw/
+data_pipeline/processed/
+data_pipeline/external/
+*.jpg
+*.jpeg
+*.png
+!frontend/public/**/*.png
+!docs/**/*.png
+!**/sample_frames/**
+*.zip
+*.tar.gz
+
+# Models / experiment artifacts
+mlruns/
+mlartifacts/
+*.pt
+*.onnx
+*.engine
+models/weights/
+
+# DVC
+/data_pipeline/.dvc/cache
+
+# Env / secrets
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Editors
+.vscode/
+.idea/
+
+# Logs
+*.log
+logs/
+
+# Rails (Phase 9, if built)
+gate-visits-admin/log/*
+gate-visits-admin/tmp/*
+gate-visits-admin/.bundle/

@@ -1,0 +1,44 @@
+# Shared Python environment for data_pipeline, training, benchmarks, backend.
+# CPU-only (no CUDA available in the build environment — see docs/edge-feasibility.md).
+
+# Core
+numpy
+opencv-python
+pillow
+requests
+tqdm
+pyyaml
+pandas
+scikit-learn
+scikit-image
+matplotlib
+
+# Detection: torchvision (BSD-3-Clause license) instead of ultralytics/YOLO
+# (AGPL-3.0) — see docs/data.md "Detector license choice" for the tradeoff.
+torch --index-url https://download.pytorch.org/whl/cpu
+torchvision --index-url https://download.pytorch.org/whl/cpu
+
+# OCR engines (two, for comparison per project brief)
+easyocr
+pytesseract
+
+# ONNX export / quantization for edge feasibility (Phase 4)
+onnx
+onnxruntime
+
+# Experiment tracking / data versioning
+mlflow
+dvc
+
+# Backend
+fastapi
+uvicorn[standard]
+sqlalchemy
+psycopg2-binary
+pydantic
+python-multipart
+alembic
+
+# Tests
+pytest
+httpx

@@ -1,0 +1,61 @@
+version: "3.9"
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: dwarpal
+      POSTGRES_PASSWORD: dwarpal_dev_only
+      POSTGRES_DB: dwarpal
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U dwarpal"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  mlflow:
+    image: python:3.11-slim
+    working_dir: /mlflow
+    command: >
+      bash -c "pip install --no-cache-dir mlflow==2.16.2 psycopg2-binary &&
+      mlflow server --host 0.0.0.0 --port 5000
+      --backend-store-uri sqlite:////mlflow/mlflow.db
+      --default-artifact-root /mlflow/artifacts"
+    ports:
+      - "5000:5000"
+    volumes:
+      - mlflow_data:/mlflow
+
+  backend:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    environment:
+      DATABASE_URL: postgresql://dwarpal:dwarpal_dev_only@postgres:5432/dwarpal
+      MLFLOW_TRACKING_URI: http://mlflow:5000
+    ports:
+      - "8000:8000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    volumes:
+      - ./backend:/app
+      - ./common:/common
+
+  frontend:
+    build:
+      context: ./frontend
+    environment:
+      NEXT_PUBLIC_API_URL: http://localhost:8000
+    ports:
+      - "3000:3000"
+    depends_on:
+      - backend
+
+volumes:
+  pgdata:
+  mlflow_data:
