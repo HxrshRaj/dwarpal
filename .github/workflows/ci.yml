@@ -39,7 +39,10 @@ jobs:
           bundler-cache: true
           working-directory: gate-visits-admin
       - name: Run Rails test suite
-        run: bin/rails test
+        # invoked via `ruby bin/rails` rather than `bin/rails` directly:
+        # this repo was authored on Windows, where bin/rails has no
+        # executable bit in git, which breaks a direct exec on Linux CI.
+        run: ruby bin/rails test
 
   frontend-build:
     runs-on: ubuntu-latest
