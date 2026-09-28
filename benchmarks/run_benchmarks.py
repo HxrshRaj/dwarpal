@@ -16,22 +16,27 @@ Writes:
 import argparse
 import json
 import os
+import sys
 import time
 from pathlib import Path
 
 import cv2
 import mlflow
 
-import sys
-
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
 sys.path.insert(0, str(ROOT / "backend"))
 
-from app.detection import TextRegionProposer, VehicleDetector  # noqa: E402
-from app.ocr import EasyOcrEngine, TesseractEngine  # noqa: E402
-from benchmarks.image_quality import blur_score, brightness  # noqa: E402
-from benchmarks.metrics import average_precision_at_iou, character_error_rate, exact_match, mean_average_precision  # noqa: E402
+from app.detection import TextRegionProposer, VehicleDetector
+from app.ocr import EasyOcrEngine, TesseractEngine
+
+from benchmarks.image_quality import blur_score, brightness
+from benchmarks.metrics import (
+    average_precision_at_iou,
+    character_error_rate,
+    exact_match,
+    mean_average_precision,
+)
 
 RESULTS_DIR = ROOT / "benchmarks" / "results"
 RAW_DIR = ROOT / "data_pipeline" / "raw"

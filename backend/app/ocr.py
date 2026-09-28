@@ -11,7 +11,6 @@ Both return (text, confidence in [0,1]).
 """
 import shutil
 from dataclasses import dataclass
-from typing import Optional
 
 import numpy as np
 
@@ -45,7 +44,7 @@ class EasyOcrEngine:
 
 
 class TesseractEngine:
-    def __init__(self, tesseract_cmd: Optional[str] = None):
+    def __init__(self, tesseract_cmd: str | None = None):
         import pytesseract
 
         self.pytesseract = pytesseract

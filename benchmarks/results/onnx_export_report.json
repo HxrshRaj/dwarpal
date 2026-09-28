@@ -1,0 +1,7 @@
+{
+  "fp32_onnx_path": "C:\\Users\\hraj1\\OneDrive\\Desktop\\dwarpal\\benchmarks\\results\\vehicle_detector_fp32.onnx",
+  "fp32_size_mb": 74.25799560546875,
+  "int8_onnx_path": "C:\\Users\\hraj1\\OneDrive\\Desktop\\dwarpal\\benchmarks\\results\\vehicle_detector_int8.onnx",
+  "int8_size_mb": 19.023798942565918,
+  "size_reduction_pct": 74.38148069113126
+}

@@ -16,7 +16,6 @@ license choice" for why we did not use ultralytics/YOLO, which is AGPL-3.0):
      part of the feasibility answer (docs/feasibility.md).
 """
 from dataclasses import dataclass
-from typing import List
 
 import cv2
 import numpy as np
@@ -33,7 +32,7 @@ CAR_CATEGORY_ID = 3
 @dataclass
 class BoxDetection:
     label: str
-    bbox_xywh: List[float]  # [x, y, w, h] in pixels
+    bbox_xywh: list[float]  # [x, y, w, h] in pixels
     score: float
 
 
@@ -55,7 +54,7 @@ class VehicleDetector:
         self.transforms = weights.transforms()
         self.torch = torch
 
-    def detect(self, image_rgb: np.ndarray) -> List[BoxDetection]:
+    def detect(self, image_rgb: np.ndarray) -> list[BoxDetection]:
         tensor = self.transforms(self.torch.from_numpy(image_rgb).permute(2, 0, 1))
         with self.torch.no_grad():
             output = self.model([tensor.to(self.device)])[0]
@@ -87,7 +86,7 @@ class TextRegionProposer:
         self.min_area = min_area
         self.max_area_frac = max_area_frac
 
-    def propose(self, image_bgr: np.ndarray) -> List[BoxDetection]:
+    def propose(self, image_bgr: np.ndarray) -> list[BoxDetection]:
         gray = cv2.cvtColor(image_bgr, cv2.COLOR_BGR2GRAY)
         h, w = gray.shape
         regions, _ = self.mser.detectRegions(gray)

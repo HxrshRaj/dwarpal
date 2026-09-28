@@ -16,8 +16,9 @@ ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
 sys.path.insert(0, str(ROOT / "backend"))
 
-from common.validators import validate_field  # noqa: E402
-from app.ocr import EasyOcrEngine, TesseractEngine  # noqa: E402
+from app.ocr import EasyOcrEngine, TesseractEngine
+
+from common.validators import validate_field
 
 SYNTH_DIR = ROOT / "data_pipeline" / "raw" / "synthetic"
 

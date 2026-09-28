@@ -70,7 +70,7 @@ def measure_onnx(onnx_path: Path, runs: int, warmup: int = 5, label: str = "onnx
 
     sess = ort.InferenceSession(str(onnx_path), providers=["CPUExecutionProvider"])
     input_name = sess.get_inputs()[0].name
-    dummy = np.random.rand(1, 3, 320, 320).astype(np.float32)
+    dummy = np.random.rand(3, 320, 320).astype(np.float32)  # list-of-3D-tensors API, no batch dim
 
     for _ in range(warmup):
         sess.run(None, {input_name: dummy})
@@ -122,7 +122,27 @@ def main():
     int8_onnx = RESULTS_DIR / "vehicle_detector_int8.onnx"
     if int8_onnx.exists():
         print("[measure] onnxruntime int8...")
-        report["measurements"].append(measure_onnx(int8_onnx, args.runs, label="onnxruntime_int8_cpu"))
+        try:
+            report["measurements"].append(measure_onnx(int8_onnx, args.runs, label="onnxruntime_int8_cpu"))
+        except Exception as e:
+            # Real, reproducible finding: naive ONNX Runtime dynamic INT8
+            # quantization breaks inference on this two-stage detector (a
+            # shape mismatch inside the ROI heads' Reshape op). Two-stage
+            # detectors (Faster R-CNN family) have dynamic-shape,
+            # data-dependent ROI operations that are known to be fragile
+            # under post-training quantization; a single-stage detector
+            # (SSD/YOLO-class) would be a better INT8 quantization
+            # candidate. We report the failure honestly rather than
+            # silently dropping this row.
+            print(f"[warn] ONNX INT8 inference failed: {e}")
+            report["measurements"].append(
+                {
+                    "runtime": "onnxruntime_int8_cpu",
+                    "error": str(e),
+                    "note": "INT8 dynamic quantization broke inference on this two-stage detector (ROI head Reshape op) — see docs/edge-feasibility.md",
+                    "model_size_mb": int8_onnx.stat().st_size / (1024 * 1024),
+                }
+            )
 
     out_path = RESULTS_DIR / "edge_latency_report.json"
     out_path.write_text(json.dumps(report, indent=2))

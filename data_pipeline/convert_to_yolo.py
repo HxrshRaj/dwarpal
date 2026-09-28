@@ -13,7 +13,6 @@ Each output row also records `source` and `is_synthetic` in a side-car
 train/val/test and so real vs synthetic are never silently merged when
 reporting metrics.
 """
-import argparse
 import json
 import shutil
 from pathlib import Path
@@ -98,8 +97,7 @@ def main():
 
     index_path = PROCESSED_DIR / "index.jsonl"
     with open(index_path, "w") as f:
-        for r in rows:
-            f.write(json.dumps(r) + "\n")
+        f.writelines(json.dumps(r) + "\n" for r in rows)
 
     classes_yaml = PROCESSED_DIR / "classes.yaml"
     classes_yaml.write_text("names:\n" + "\n".join(f"  {i}: {c}" for i, c in enumerate(CLASSES)) + "\n")

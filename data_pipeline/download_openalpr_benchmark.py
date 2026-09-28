@@ -80,8 +80,7 @@ def main() -> None:
 
     manifest_path = RAW_DIR / f"manifest_{args.region}.jsonl"
     with open(manifest_path, "w") as f:
-        for row in manifest:
-            f.write(json.dumps(row) + "\n")
+        f.writelines(json.dumps(row) + "\n" for row in manifest)
     print(f"[done] {len(manifest)} real labeled plate images saved to {RAW_DIR}")
     print("[license] AGPL-3.0 — local evaluation only, not redistributed. See docs/data.md")
 

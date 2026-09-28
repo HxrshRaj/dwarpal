@@ -36,7 +36,6 @@ import json
 import re
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Optional
 
 _CHAR_CONFUSION_TO_DIGIT = {"O": "0", "o": "0", "I": "1", "l": "1", "S": "5", "B": "8", "Z": "2"}
 _DIGIT_TO_CHAR_CONFUSION = {"0": "O", "1": "I", "5": "S", "8": "B"}
@@ -73,7 +72,7 @@ def normalize_usdot(raw: str) -> ValidationResult:
     return ValidationResult("usdot", raw, digits, valid, note)
 
 
-def iso6346_check_digit(owner_and_serial: str) -> Optional[int]:
+def iso6346_check_digit(owner_and_serial: str) -> int | None:
     if len(owner_and_serial) != 10 or not owner_and_serial[:4].isalpha() or not owner_and_serial[4:].isdigit():
         return None
     total = 0

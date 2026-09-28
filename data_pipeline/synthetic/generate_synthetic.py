@@ -235,8 +235,7 @@ def main():
 
     manifest_path = OUT_DIR / "manifest.jsonl"
     with open(manifest_path, "w") as f:
-        for row in manifest:
-            f.write(json.dumps(row) + "\n")
+        f.writelines(json.dumps(row) + "\n" for row in manifest)
 
     print(f"[done] {len(manifest)} SYNTHETIC images written to {OUT_DIR}")
     print("[reminder] synthetic data — never merge with real-data metrics")

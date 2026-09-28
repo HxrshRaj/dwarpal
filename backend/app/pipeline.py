@@ -8,13 +8,16 @@ exactly what the API does — no separate "demo" implementation.
 import sys
 from dataclasses import asdict, dataclass
 from pathlib import Path
-from typing import List, Optional
 
 import cv2
 import numpy as np
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
-from common.validators import DEFAULT_CONFIDENCE_THRESHOLDS, needs_human_review, validate_field
+from common.validators import (
+    DEFAULT_CONFIDENCE_THRESHOLDS,
+    needs_human_review,
+    validate_field,
+)
 
 from .detection import TextRegionProposer, VehicleDetector
 from .ocr import EasyOcrEngine, TesseractEngine, run_both_engines
@@ -32,17 +35,17 @@ class FieldResult:
     is_valid_format: bool
     format_note: str
     needs_review: bool
-    id: Optional[str] = None  # populated by the API after DB insert; empty in benchmarks
+    id: str | None = None  # populated by the API after DB insert; empty in benchmarks
 
 
 @dataclass
 class PipelineResult:
     vehicle_boxes: list
-    fields: List[FieldResult]
+    fields: list[FieldResult]
 
 
 class GatePipeline:
-    def __init__(self, vehicle_score_threshold: float = 0.5, confidence_thresholds: Optional[dict] = None):
+    def __init__(self, vehicle_score_threshold: float = 0.5, confidence_thresholds: dict | None = None):
         self.vehicle_detector = VehicleDetector(score_threshold=vehicle_score_threshold)
         self.text_proposer = TextRegionProposer()
         self.easy_ocr = EasyOcrEngine()

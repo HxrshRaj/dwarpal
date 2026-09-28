@@ -15,7 +15,6 @@ Usage:
 """
 import argparse
 import json
-import os
 import sys
 import zipfile
 from pathlib import Path
@@ -115,8 +114,7 @@ def main() -> None:
 
     manifest_path = RAW_DIR / "manifest.jsonl"
     with open(manifest_path, "w") as f:
-        for row in manifest:
-            f.write(json.dumps(row) + "\n")
+        f.writelines(json.dumps(row) + "\n" for row in manifest)
 
     print(f"[done] {len(manifest)} real images saved to {RAW_DIR}")
     print(f"[done] manifest: {manifest_path}")

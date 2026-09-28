@@ -32,18 +32,23 @@ def main():
     model = fasterrcnn_mobilenet_v3_large_320_fpn(weights=weights)
     model.eval()
 
-    dummy = torch.rand(1, 3, 320, 320)
+    dummy = torch.rand(3, 320, 320)
     fp32_path = RESULTS_DIR / "vehicle_detector_fp32.onnx"
 
     print("[export] tracing + exporting FP32 ONNX (torchvision detection models export as a list-input graph)...")
+    # dynamo=False: torchvision's Faster R-CNN uses data-dependent control
+    # flow inside NMS that the newer torch.export/dynamo-based exporter
+    # cannot symbolically trace (GuardOnDataDependentSymNode). The legacy
+    # TorchScript-tracing exporter handles it fine and is what torchvision's
+    # own ONNX export documentation/tutorials use for this model family.
     torch.onnx.export(
         model,
-        [dummy],
+        ([dummy],),
         str(fp32_path),
         input_names=["images"],
         output_names=["boxes", "labels", "scores"],
         opset_version=17,
-        dynamic_axes={"images": {0: "batch"}},
+        dynamo=False,
     )
     fp32_size_mb = fp32_path.stat().st_size / (1024 * 1024)
     print(f"[export] FP32 ONNX written: {fp32_path} ({fp32_size_mb:.1f} MB)")

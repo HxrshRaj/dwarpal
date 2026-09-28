@@ -1,6 +1,6 @@
 """Metric implementations used by every benchmark script. Kept dependency-light
 (no ML framework required) so metrics can be unit tested in isolation."""
-from typing import List, Sequence, Tuple
+from collections.abc import Sequence
 
 
 def iou_xywh(a: Sequence[float], b: Sequence[float]) -> float:
@@ -21,8 +21,8 @@ def iou_xywh(a: Sequence[float], b: Sequence[float]) -> float:
 
 
 def average_precision_at_iou(
-    predictions: List[Tuple[List[float], float]],  # [(bbox_xywh, score), ...]
-    ground_truths: List[List[float]],  # [bbox_xywh, ...]
+    predictions: list[tuple[list[float], float]],  # [(bbox_xywh, score), ...]
+    ground_truths: list[list[float]],  # [bbox_xywh, ...]
     iou_threshold: float = 0.5,
 ) -> float:
     """Single-image, single-class AP at a fixed IoU threshold via
@@ -56,7 +56,7 @@ def average_precision_at_iou(
     return sum(precisions) / len(precisions)
 
 
-def mean_average_precision(per_image_ap: List[float]) -> float:
+def mean_average_precision(per_image_ap: list[float]) -> float:
     if not per_image_ap:
         return 0.0
     return sum(per_image_ap) / len(per_image_ap)

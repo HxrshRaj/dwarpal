@@ -14,8 +14,8 @@ Endpoints:
 """
 import os
 import uuid
+from contextlib import asynccontextmanager
 from pathlib import Path
-from typing import List
 
 import cv2
 import numpy as np
@@ -26,18 +26,10 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from . import models, schemas
-from .db import Base, SessionLocal, engine, get_db
+from .db import Base, engine, get_db
 
 UPLOAD_DIR = Path(os.environ.get("UPLOAD_DIR", Path(__file__).resolve().parents[1] / "uploads"))
 UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
-
-app = FastAPI(title="Dwarpal Gate Service", version="0.1.0")
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
 
 _pipeline = None
 
@@ -51,9 +43,19 @@ def get_pipeline():
     return _pipeline
 
 
-@app.on_event("startup")
-def on_startup():
+@asynccontextmanager
+async def lifespan(app: FastAPI):
     Base.metadata.create_all(bind=engine)
+    yield
+
+
+app = FastAPI(title="Dwarpal Gate Service", version="0.1.0", lifespan=lifespan)
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 
 @app.get("/health")
@@ -165,7 +167,7 @@ def _visit_to_out(visit: models.Visit, vehicle_boxes=None, fields_override=None)
     )
 
 
-@app.get("/visits", response_model=List[schemas.VisitOut])
+@app.get("/visits", response_model=list[schemas.VisitOut])
 def list_visits(db: Session = Depends(get_db)):
     visits = db.scalars(select(models.Visit).order_by(models.Visit.created_at.desc())).all()
     return [_visit_to_out(v) for v in visits]
@@ -187,9 +189,9 @@ def get_visit(visit_id: str, db: Session = Depends(get_db)):
     return _visit_to_out(visit)
 
 
-@app.get("/review-queue", response_model=List[schemas.ReviewQueueItem])
+@app.get("/review-queue", response_model=list[schemas.ReviewQueueItem])
 def review_queue(db: Session = Depends(get_db)):
-    dets = db.scalars(select(models.Detection).where(models.Detection.needs_review == True)).all()  # noqa: E712
+    dets = db.scalars(select(models.Detection).where(models.Detection.needs_review == True)).all()
     items = []
     for d in dets:
         visit = db.get(models.Visit, d.visit_id)
@@ -257,7 +259,7 @@ def submit_correction(visit_id: str, correction: schemas.CorrectionIn, db: Sessi
     return corr
 
 
-@app.get("/visits/{visit_id}/audit", response_model=List[schemas.AuditEventOut])
+@app.get("/visits/{visit_id}/audit", response_model=list[schemas.AuditEventOut])
 def get_audit_trail(visit_id: str, db: Session = Depends(get_db)):
     events = db.scalars(
         select(models.AuditEvent).where(models.AuditEvent.visit_id == visit_id).order_by(models.AuditEvent.created_at)

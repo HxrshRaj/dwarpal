@@ -24,7 +24,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 RESULTS_DIR = ROOT / "benchmarks" / "results"
 TARGET_PRECISION = 0.90
-CANDIDATE_THRESHOLDS = [0.1 * i for i in range(0, 10)]
+CANDIDATE_THRESHOLDS = [0.1 * i for i in range(10)]
 
 
 def main():
