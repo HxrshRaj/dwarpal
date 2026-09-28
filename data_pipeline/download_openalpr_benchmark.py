@@ -40,16 +40,16 @@ def list_dir(region: str) -> list:
 
 
 def parse_gt_txt(text: str) -> dict:
-    """OpenALPR benchmark txt format: one line 'position_plate <x> <y> <w> <h>'
-    followed by 'plate <TEXT>' or similar; be liberal parsing key: value pairs."""
-    result = {}
-    for line in text.strip().splitlines():
-        parts = line.strip().split()
-        if not parts:
-            continue
-        key = parts[0]
-        result[key] = parts[1:]
-    return result
+    """OpenALPR benchmark txt format (verified against real downloaded
+    files, not guessed): a single tab-separated line
+    '<filename>\t<x>\t<y>\t<w>\t<h>\t<PLATE_TEXT>' — bbox in pixels, origin
+    top-left."""
+    line = text.strip().splitlines()[0]
+    parts = line.split("\t")
+    if len(parts) != 6:
+        parts = line.split()  # fallback: some files may use whitespace instead of tabs
+    filename, x, y, w, h, plate_text = parts[:6]
+    return {"position_plate": [x, y, w, h], "plate": [plate_text]}
 
 
 def main() -> None:

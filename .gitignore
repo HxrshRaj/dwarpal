@@ -37,6 +37,10 @@ models/weights/
 # DVC
 /data_pipeline/.dvc/cache
 
+*.db
+*.sqlite3
+backend/uploads/
+
 # Env / secrets
 .env
 .env.*

@@ -1,0 +1,47 @@
+<p><%= link_to "&larr; All visits".html_safe, gate_visits_path %></p>
+
+<h1>Visit <%= @visit.id %></h1>
+<p>Status: <strong><%= @visit.status %></strong> &middot; Created: <%= @visit.created_at %></p>
+<p>Image: <code><%= @visit.image_path %></code></p>
+
+<h2>Detected fields</h2>
+<table border="1" cellpadding="6" cellspacing="0">
+  <thead>
+    <tr>
+      <th>Class</th>
+      <th>Text</th>
+      <th>Confidence</th>
+      <th>Valid format</th>
+      <th>Needs review</th>
+      <th>Correction</th>
+    </tr>
+  </thead>
+  <tbody>
+    <% @visit.fields.each do |field| %>
+      <tr>
+        <td><%= field.field_class %></td>
+        <td><%= field.normalized_text %></td>
+        <td><%= "%.2f" % field.confidence %></td>
+        <td><%= field.is_valid_format ? "yes" : "no" %></td>
+        <td><%= field.needs_review ? "YES" : "no" %></td>
+        <td>
+          <% if field.needs_review && field.id %>
+            <%= form_with url: corrections_gate_visit_path(@visit.id), method: :post, local: true do |f| %>
+              <%= f.hidden_field :detection_id, value: field.id %>
+              <%= f.hidden_field :field_class, value: field.field_class %>
+              <%= f.text_field :corrected_text, value: field.normalized_text %>
+              <%= f.submit "Save correction" %>
+            <% end %>
+          <% end %>
+        </td>
+      </tr>
+    <% end %>
+  </tbody>
+</table>
+
+<h2>Audit trail</h2>
+<ul>
+  <% @audit_events.each do |event| %>
+    <li><%= event["created_at"] %> &mdash; <strong><%= event["actor"] %></strong>: <%= event["action"] %> <%= event["detail"] %></li>
+  <% end %>
+</ul>

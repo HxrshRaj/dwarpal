@@ -1,0 +1,26 @@
+<h1>Gate visits</h1>
+<p>Reads live from the Dwarpal FastAPI gate service (<code><%= @api_base_url %></code>).</p>
+
+<table border="1" cellpadding="6" cellspacing="0">
+  <thead>
+    <tr>
+      <th>ID</th>
+      <th>Created</th>
+      <th>Status</th>
+      <th>Fields</th>
+    </tr>
+  </thead>
+  <tbody>
+    <% @visits.each do |visit| %>
+      <tr>
+        <td><%= link_to visit.id[0..7], gate_visit_path(visit.id) %></td>
+        <td><%= visit.created_at %></td>
+        <td><%= visit.status %></td>
+        <td><%= visit.fields.size %></td>
+      </tr>
+    <% end %>
+    <% if @visits.empty? %>
+      <tr><td colspan="4">No visits yet — submit an image via the frontend or <code>POST /visits</code>.</td></tr>
+    <% end %>
+  </tbody>
+</table>
