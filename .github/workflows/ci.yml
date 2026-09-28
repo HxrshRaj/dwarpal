@@ -23,8 +23,23 @@ jobs:
         run: |
           pip install ruff
           ruff check common backend/app data_pipeline benchmarks --exit-zero
-      - name: Run validator + split-leakage + API contract tests
-        run: pytest common/tests data_pipeline/tests backend/tests -v
+      - name: Run validator + split-leakage + metrics + API contract tests
+        run: pytest common/tests data_pipeline/tests benchmarks/tests backend/tests -v
+
+  rails-test:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: gate-visits-admin
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: "3.4"
+          bundler-cache: true
+          working-directory: gate-visits-admin
+      - name: Run Rails test suite
+        run: bin/rails test
 
   frontend-build:
     runs-on: ubuntu-latest
