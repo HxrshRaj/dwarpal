@@ -23,7 +23,7 @@ in some other context (street-level plates, general traffic/CCTV). See
 | CPU latency / model size | Measured on the build machine | — | — | — |
 | Jetson feasibility | — | — | Labeled estimate, or "unknown" where no citable source exists | Real Jetson device |
 | Cloud deployment | — | — | — | Cloud account credentials (see `deploy/README.md`) |
-| Ruby on Rails admin (Phase 9) | — | — | — | See status note below |
+| Ruby on Rails admin (Phase 9) | Built and live-integration-tested against the real backend (see below) | — | — | — |
 
 See `docs/feasibility.md` for the full field-by-field verdict, and
 `docs/benchmarks.md` / `docs/edge-feasibility.md` for every number's exact
@@ -40,6 +40,7 @@ frontend/        Next.js UI: upload+overlay, review queue, dashboard, feasibilit
 common/          field validators (USDOT/trailer ID/plate) shared by backend + benchmarks
 docs/            data.md, benchmarks.md, edge-feasibility.md, feasibility.md, limitations.md
 deploy/          ready-to-deploy config, not yet deployed (see deploy/README.md)
+gate-visits-admin/  optional Phase 9: Rails admin UI consuming the FastAPI service over HTTP
 ```
 
 The backend and the benchmark scripts import the **same**
@@ -100,8 +101,27 @@ reasoning and the tradeoff this implies for a production build.
 
 ## Rails integration (Phase 9)
 
-_Status note filled in at the end of the build — see the final report below
-for whether this was attempted._
+**Attempted and working.** [`gate-visits-admin/`](gate-visits-admin/) is a
+real Rails 8.1 app (Ruby 3.4, generated with `--skip-active-record` — it
+has no database of its own; all data lives in the FastAPI/Postgres
+backend) with a model, controller, views, and 8 passing Minitest tests. It
+consumes the gate service over plain `Net::HTTP`: a visit list, a visit
+detail page with per-field OCR results, and an operator correction form.
+
+This was verified with a **live integration test**, not just mocks: the
+real FastAPI backend and the Rails app were booted side by side, a real
+OpenALPR benchmark plate image was uploaded through the API, Rails
+correctly rendered the real detected fields and audit trail, and an
+operator correction submitted through the actual HTML form (real CSRF
+protection intact) was confirmed to land in the backend's
+`/export/corrections` dataset. Two real bugs were caught by this and
+fixed — see the commit history for `gate-visits-admin/` for specifics; one
+of them (a missing `require`) was invisible to the mocked test suite and
+only surfaced under live integration, which is exactly why that extra step
+was worth doing.
+
+Run it: `cd gate-visits-admin && bin/rails server -p 3001` with
+`DWARPAL_API_URL` pointing at the FastAPI backend.
 
 ## Final report
 
