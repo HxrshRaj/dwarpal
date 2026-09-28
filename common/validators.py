@@ -32,8 +32,10 @@ Format sources (verified before writing any regex — see docs/data.md
     Not a text field — boolean detection confidence only. No format
     validation applies.
 """
+import json
 import re
 from dataclasses import dataclass
+from pathlib import Path
 from typing import Optional
 
 _CHAR_CONFUSION_TO_DIGIT = {"O": "0", "o": "0", "I": "1", "l": "1", "S": "5", "B": "8", "Z": "2"}
@@ -131,6 +133,12 @@ DEFAULT_CONFIDENCE_THRESHOLDS = {
     "trailer_id": 0.5,
     "seal": 0.5,
 }
+
+_TUNED_THRESHOLDS_PATH = Path(__file__).resolve().parent / "confidence_thresholds.json"
+if _TUNED_THRESHOLDS_PATH.exists():
+    # produced by benchmarks/tune_thresholds.py from real-data precision/
+    # coverage curves — overrides the placeholder defaults above when present.
+    DEFAULT_CONFIDENCE_THRESHOLDS = {**DEFAULT_CONFIDENCE_THRESHOLDS, **json.loads(_TUNED_THRESHOLDS_PATH.read_text())}
 
 
 def needs_human_review(field_class: str, confidence: float, thresholds: dict = None) -> bool:

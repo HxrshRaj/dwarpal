@@ -32,6 +32,7 @@ class FieldResult:
     is_valid_format: bool
     format_note: str
     needs_review: bool
+    id: Optional[str] = None  # populated by the API after DB insert; empty in benchmarks
 
 
 @dataclass

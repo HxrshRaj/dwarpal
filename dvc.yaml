@@ -1,0 +1,47 @@
+# DVC pipeline: reproducible data prep stages. Run `dvc repro` after
+# `dvc init` (first-time setup: `dvc init && dvc remote add -d local ../dvc-storage`
+# — no cloud credentials are available in this environment, so a local
+# filesystem remote is used; swap in S3/GCS by changing the remote URL only).
+stages:
+  download_coco_trucks:
+    cmd: python data_pipeline/download_coco_trucks.py --limit 250
+    outs:
+      - data_pipeline/raw/coco_trucks
+
+  download_openalpr_benchmark:
+    cmd: python data_pipeline/download_openalpr_benchmark.py --region us
+    outs:
+      - data_pipeline/raw/openalpr_benchmark
+
+  generate_synthetic:
+    cmd: python data_pipeline/synthetic/generate_synthetic.py --count 500 --seed 42
+    outs:
+      - data_pipeline/raw/synthetic
+
+  convert_to_yolo:
+    cmd: python data_pipeline/convert_to_yolo.py
+    deps:
+      - data_pipeline/raw/coco_trucks
+      - data_pipeline/raw/synthetic
+    outs:
+      - data_pipeline/processed/images
+      - data_pipeline/processed/labels
+      - data_pipeline/processed/index.jsonl
+
+  split_by_source:
+    cmd: python data_pipeline/split_by_source.py
+    deps:
+      - data_pipeline/processed/index.jsonl
+    outs:
+      - data_pipeline/processed/index_split.jsonl
+      - data_pipeline/processed/split_summary.json
+
+  run_benchmarks:
+    cmd: python benchmarks/run_benchmarks.py --limit-per-source 100
+    deps:
+      - data_pipeline/raw/coco_trucks
+      - data_pipeline/raw/openalpr_benchmark
+      - data_pipeline/raw/synthetic
+    outs:
+      - benchmarks/results/results.json
+      - benchmarks/results/raw_predictions.jsonl

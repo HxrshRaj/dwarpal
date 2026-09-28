@@ -1,0 +1,7 @@
+{
+  "generated": false,
+  "note": "Run `python benchmarks/run_benchmarks.py` then `python benchmarks/export_for_dashboard.py` to populate this file with real numbers. Do not hand-edit accuracy figures here.",
+  "real": [],
+  "synthetic": [],
+  "review_rate_over_time": []
+}

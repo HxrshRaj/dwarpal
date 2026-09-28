@@ -1,69 +1,114 @@
-import Image from "next/image";
+"use client";
+
+import { useState } from "react";
+import { API_URL, VisitOut, uploadVisit } from "@/lib/api";
+import { BoundingBoxOverlay } from "@/components/BoundingBoxOverlay";
 
 export default function Home() {
+  const [visit, setVisit] = useState<VisitOut | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [dims, setDims] = useState<{ w: number; h: number }>({ w: 1, h: 1 });
+
+  async function handleFile(file: File) {
+    setLoading(true);
+    setError(null);
+    try {
+      const result = await uploadVisit(file);
+      setVisit(result);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : String(e));
+    } finally {
+      setLoading(false);
+    }
+  }
+
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert h-5 w-[100px]"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
+    <div className="min-h-screen p-8 max-w-5xl mx-auto">
+      <header className="mb-6">
+        <h1 className="text-2xl font-semibold">Dwarpal — Gate Capture Prototype</h1>
+        <p className="text-sm text-neutral-500 mt-1">
+          Upload a frame to run detection + OCR + validation. This is a research prototype — see the
+          {" "}<a href="/feasibility" className="underline">feasibility page</a> for what is real vs. estimated.
+        </p>
+      </header>
+
+      <div className="border-2 border-dashed border-neutral-300 rounded-lg p-8 text-center mb-6">
+        <input
+          type="file"
+          accept="image/*"
+          disabled={loading}
+          onChange={(e) => {
+            const file = e.target.files?.[0];
+            if (file) handleFile(file);
+          }}
         />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the{" "}
-            <code className="rounded bg-black/[.06] px-1.5 py-0.5 font-mono text-[0.9em] dark:bg-white/[.08]">
-              page.tsx
-            </code>{" "}
-            file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
-        </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert h-[14px] w-4"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={14}
+        {loading && <p className="mt-3 text-sm text-neutral-500">Running detection + OCR on CPU — this can take a few seconds…</p>}
+        {error && <p className="mt-3 text-sm text-red-600">Error: {error} (is the backend running at {API_URL}?)</p>}
+      </div>
+
+      {visit && (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div>
+            <h2 className="font-medium mb-2">
+              Frame — status: <span className="font-mono text-sm px-2 py-0.5 rounded bg-neutral-100">{visit.status}</span>
+            </h2>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={`${API_URL}/visits/${visit.id}/image`}
+              alt="uploaded frame"
+              className="hidden"
+              onLoad={(e) => {
+                const img = e.currentTarget;
+                setDims({ w: img.naturalWidth, h: img.naturalHeight });
+              }}
             />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
+            <BoundingBoxOverlay
+              imageUrl={`${API_URL}/visits/${visit.id}/image`}
+              naturalWidth={dims.w}
+              naturalHeight={dims.h}
+              vehicleBoxes={visit.vehicle_boxes}
+              fields={visit.fields}
+            />
+          </div>
+
+          <div>
+            <h2 className="font-medium mb-2">Extracted fields</h2>
+            <table className="w-full text-sm border-collapse">
+              <thead>
+                <tr className="text-left border-b border-neutral-200">
+                  <th className="py-1 pr-2">Field</th>
+                  <th className="py-1 pr-2">Text</th>
+                  <th className="py-1 pr-2">Confidence</th>
+                  <th className="py-1 pr-2">Valid</th>
+                  <th className="py-1">Review</th>
+                </tr>
+              </thead>
+              <tbody>
+                {visit.fields.length === 0 && (
+                  <tr>
+                    <td colSpan={5} className="py-3 text-neutral-500">
+                      No fields detected — this classical/off-the-shelf pipeline has limited recall (see docs/benchmarks.md).
+                    </td>
+                  </tr>
+                )}
+                {visit.fields.map((f, i) => (
+                  <tr key={i} className="border-b border-neutral-100">
+                    <td className="py-1 pr-2 font-mono">{f.field_class}</td>
+                    <td className="py-1 pr-2 font-mono">{f.normalized_text || "—"}</td>
+                    <td className="py-1 pr-2">{(f.confidence * 100).toFixed(0)}%</td>
+                    <td className="py-1 pr-2">{f.is_valid_format ? "✓" : "✗"}</td>
+                    <td className="py-1">{f.needs_review ? <span className="text-amber-600">flagged</span> : "—"}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+            <p className="text-xs text-neutral-500 mt-3">
+              Fields flagged for review appear in the <a href="/review" className="underline">review queue</a>.
+            </p>
+          </div>
         </div>
-      </main>
+      )}
     </div>
   );
 }

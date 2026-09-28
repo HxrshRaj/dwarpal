@@ -1,0 +1,42 @@
+# Render.com Blueprint — free-tier CPU deployment.
+#
+# STATUS: not deployed. No Render account/API credentials are available in
+# this build environment. This file is ready to deploy as-is by connecting
+# this GitHub repo in the Render dashboard ("New -> Blueprint") — see
+# deploy/README.md for the exact steps and what to expect from a free-tier
+# CPU instance (honest latency estimate lives in docs/edge-feasibility.md,
+# not repeated here as a guess).
+services:
+  - type: web
+    name: dwarpal-backend
+    runtime: docker
+    dockerfilePath: ./backend/Dockerfile
+    dockerContext: .
+    plan: free
+    envVars:
+      - key: DATABASE_URL
+        fromDatabase:
+          name: dwarpal-db
+          property: connectionString
+      - key: UPLOAD_DIR
+        value: /tmp/uploads
+    healthCheckPath: /health
+
+  - type: web
+    name: dwarpal-frontend
+    runtime: docker
+    dockerfilePath: ./frontend/Dockerfile
+    dockerContext: .
+    plan: free
+    envVars:
+      - key: NEXT_PUBLIC_API_URL
+        fromService:
+          name: dwarpal-backend
+          type: web
+          property: hostport
+
+databases:
+  - name: dwarpal-db
+    plan: free
+    databaseName: dwarpal
+    user: dwarpal

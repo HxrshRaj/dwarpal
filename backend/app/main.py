@@ -21,6 +21,7 @@ import cv2
 import numpy as np
 from fastapi import Depends, FastAPI, File, HTTPException, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import FileResponse
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
@@ -80,6 +81,7 @@ async def create_visit(file: UploadFile = File(...), db: Session = Depends(get_d
     db.flush()
 
     any_review = False
+    persisted_dets = []
     for f in result.fields:
         if f.needs_review:
             any_review = True
@@ -96,6 +98,11 @@ async def create_visit(file: UploadFile = File(...), db: Session = Depends(get_d
             needs_review=f.needs_review,
         )
         db.add(det)
+        persisted_dets.append(det)
+
+    db.flush()  # assign real IDs to persisted_dets before building the response
+    for f, det in zip(result.fields, persisted_dets):
+        f.id = det.id
 
     visit.status = "pending_review" if any_review else "auto_accepted"
 
@@ -117,6 +124,7 @@ def _visit_to_out(visit: models.Visit, vehicle_boxes=None, fields_override=None)
     if fields_override is not None:
         fields = [
             schemas.FieldOut(
+                id=f.id,
                 field_class=f.field_class,
                 bbox_xywh=f.bbox_xywh,
                 raw_text=f.raw_text,
@@ -161,6 +169,14 @@ def _visit_to_out(visit: models.Visit, vehicle_boxes=None, fields_override=None)
 def list_visits(db: Session = Depends(get_db)):
     visits = db.scalars(select(models.Visit).order_by(models.Visit.created_at.desc())).all()
     return [_visit_to_out(v) for v in visits]
+
+
+@app.get("/visits/{visit_id}/image")
+def get_visit_image(visit_id: str, db: Session = Depends(get_db)):
+    visit = db.get(models.Visit, visit_id)
+    if visit is None or not Path(visit.image_path).exists():
+        raise HTTPException(404, "image not found")
+    return FileResponse(visit.image_path)
 
 
 @app.get("/visits/{visit_id}", response_model=schemas.VisitOut)
