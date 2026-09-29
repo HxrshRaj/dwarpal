@@ -217,7 +217,10 @@ def main():
 
     RESULTS_DIR.mkdir(parents=True, exist_ok=True)
 
-    mlflow.set_tracking_uri(os.environ.get("MLFLOW_TRACKING_URI", f"file:{ROOT / 'mlruns'}"))
+    # MLflow's filesystem tracking store ("file:./mlruns") is in maintenance
+    # mode as of the version pinned in requirements.txt and raises unless a
+    # database backend is used — default to a local sqlite file instead.
+    mlflow.set_tracking_uri(os.environ.get("MLFLOW_TRACKING_URI", f"sqlite:///{ROOT / 'mlruns.db'}"))
     mlflow.set_experiment("dwarpal-gate-benchmarks")
 
     print("[init] loading models (torchvision Faster R-CNN, EasyOCR, Tesseract)...")

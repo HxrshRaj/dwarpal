@@ -62,8 +62,19 @@ def mean_average_precision(per_image_ap: list[float]) -> float:
     return sum(per_image_ap) / len(per_image_ap)
 
 
+def _alnum_upper(text: str) -> str:
+    """Strip everything but letters/digits and uppercase — the same
+    normalization common/validators.py applies before an operator ever sees
+    OCR output. exact_match is deliberately computed post-normalization so
+    it reports what the deployed system would actually accept (e.g. OCR
+    output 'YG9-X2G' against ground truth 'YG9X2G' is an exact match, since
+    the hyphen never reaches the operator). Raw normalization on its own,
+    with no source-code dependency (keeps this module import-light)."""
+    return "".join(c for c in text if c.isalnum()).upper()
+
+
 def exact_match(pred_text: str, gt_text: str) -> bool:
-    return pred_text.strip().upper() == gt_text.strip().upper()
+    return _alnum_upper(pred_text) == _alnum_upper(gt_text)
 
 
 def levenshtein(a: str, b: str) -> int:

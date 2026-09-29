@@ -1,0 +1,68 @@
+{
+  "real": [
+    {
+      "field": "truck",
+      "source": "coco2017val",
+      "n": 248,
+      "detection_map50": 0.32806899641577064,
+      "mean_latency_ms": 208.98324193577508
+    },
+    {
+      "field": "plate",
+      "source": "openalpr_benchmark_us",
+      "n": 222,
+      "detection_map50": 0.0018627371702768527,
+      "easyocr_ocr_exact_match": 0.11711711711711711,
+      "easyocr_cer": 0.6826522951522944,
+      "tesseract_ocr_exact_match": 0.04054054054054054,
+      "tesseract_cer": 0.8064779064779061,
+      "n_ocr": 222
+    }
+  ],
+  "synthetic": [
+    {
+      "field": "usdot",
+      "source": "synthetic",
+      "n": 250,
+      "detection_map50": 0.02786333333333333,
+      "easyocr_ocr_exact_match": 0.552,
+      "easyocr_cer": 0.07789743589743581,
+      "tesseract_ocr_exact_match": 0.528,
+      "tesseract_cer": 0.15480219780219778,
+      "n_ocr": 250
+    },
+    {
+      "field": "trailer_id",
+      "source": "synthetic",
+      "n": 250,
+      "detection_map50": 0.010398105316200553,
+      "easyocr_ocr_exact_match": 0.824,
+      "easyocr_cer": 0.04222655122655123,
+      "tesseract_ocr_exact_match": 0.74,
+      "tesseract_cer": 0.21958802308802325,
+      "n_ocr": 250
+    },
+    {
+      "field": "plate",
+      "source": "synthetic",
+      "n": 250,
+      "detection_map50": 0.009982222222222222,
+      "easyocr_ocr_exact_match": 0.42,
+      "easyocr_cer": 0.13312380952380945,
+      "tesseract_ocr_exact_match": 0.576,
+      "tesseract_cer": 0.22337142857142867,
+      "n_ocr": 250
+    },
+    {
+      "field": "seal",
+      "source": "synthetic",
+      "n": 127,
+      "detection_map50": 0.010034995625546805,
+      "easyocr_ocr_exact_match": null,
+      "easyocr_cer": null,
+      "tesseract_ocr_exact_match": null,
+      "tesseract_cer": null,
+      "n_ocr": 0
+    }
+  ]
+}

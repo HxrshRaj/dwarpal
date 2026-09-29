@@ -40,6 +40,7 @@ models/weights/
 *.db
 *.sqlite3
 backend/uploads/
+mlruns.db
 
 # Env / secrets
 .env

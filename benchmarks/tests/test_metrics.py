@@ -70,6 +70,14 @@ def test_exact_match_false_on_difference():
     assert not exact_match("ABC124", "ABC123")
 
 
+def test_exact_match_ignores_punctuation_like_the_production_validator():
+    # e.g. EasyOCR emitting "YG9-X2G" for ground truth "YG9X2G" should count
+    # as a match, because common/validators.py strips the hyphen before an
+    # operator ever sees it -- exact_match should reflect deployed behavior.
+    assert exact_match("YG9-X2G", "YG9X2G")
+    assert exact_match("YGg suntrup K26 3", "YGGSUNTRUPK263")
+
+
 def test_levenshtein_identical_is_zero():
     assert levenshtein("ABC", "ABC") == 0
 
