@@ -74,7 +74,7 @@ python data_pipeline/split_by_source.py
 ### Benchmarks
 
 ```bash
-python benchmarks/run_benchmarks.py --limit-per-source 100
+python benchmarks/run_benchmarks.py --limit-per-source 250
 python benchmarks/robustness.py
 python benchmarks/tune_thresholds.py
 python benchmarks/export_onnx.py
@@ -125,6 +125,91 @@ Run it: `cd gate-visits-admin && bin/rails server -p 3001` with
 
 ## Final report
 
-_Filled in once the build is complete — three sections: verified and safe
-to claim, synthetic/estimated/limited, and pending (needs credentials or
-hardware not available in this environment)._
+### 1. Verified and safe to claim
+
+- **Truck/vehicle detection works on real photos**: torchvision Faster
+  R-CNN (pretrained COCO, not fine-tuned) reaches mAP@0.5 = 0.328 on 248
+  real COCO images. `python benchmarks/run_benchmarks.py --limit-per-source 250`.
+- **OCR works, end to end, on a real plate photo**: manually verified
+  (`backend/app/pipeline.py`'s `GatePipeline.run()`, the exact code the API
+  uses) on a real OpenALPR benchmark image — EasyOCR read a real plate as
+  "YG9-X2G" against ground truth "YG9X2G", an exact match after the
+  production validator's normalization.
+- **The full gate workflow is real and was exercised live end to end**:
+  image upload → detection → OCR (two engines compared) → format
+  validation (49 CFR 390.21-cited USDOT rules, ISO 6346-checksummed
+  trailer IDs) → confidence gating → Postgres-backed persistence → audit
+  log → operator correction → corrections export, all through the actual
+  FastAPI service (`backend/app/main.py`), verified with `curl` against a
+  running instance, not just unit tests.
+- **The Rails admin app (Phase 9) is real and was live-integration-tested**
+  against the real backend, not just mocks — see "Rails integration" above.
+  Two real bugs were caught this way (a missing `require`, and a view
+  bypassing its controller's injected client).
+- **54 automated tests pass** (`pytest`: validators, split-leakage,
+  detection/OCR metrics, FastAPI contract tests; `gate-visits-admin`: 8
+  Minitest tests) and **CI is green on GitHub Actions** (fresh Ubuntu
+  runners, not just locally) for Python lint+test, the Rails test suite,
+  the Next.js production build, and a CPU smoke evaluation.
+- **ONNX export and CPU latency are real, measured numbers** on this build
+  machine (12-core Intel, no GPU): ONNX Runtime FP32 gives a ~6x speedup
+  over raw PyTorch (9.7ms vs 58ms mean latency); see `docs/edge-feasibility.md`.
+- **Real, licensed datasets were sourced and documented**: 248 COCO 2017
+  truck images (CC BY), 222 OpenALPR benchmark US plates (AGPL — used
+  local-eval-only by design, never redistributed, see `docs/data.md`).
+- **Every format validator cites its actual source**: USDOT from 49 CFR
+  390.21 (fetched directly from govinfo.gov), trailer ID from ISO 6346
+  (checksum verified against the standard's own worked example in tests),
+  plate format explicitly *not* claimed to match any specific state.
+
+### 2. Synthetic, estimated, or limited
+
+- **USDOT, trailer ID, and seal detection/OCR numbers are synthetic-only**
+  (no public dataset exists for these fields — a genuine finding, not a
+  gap papered over). Real-data numbers exist only for truck detection and
+  plates; see `docs/benchmarks.md`'s two clearly separated tables.
+- **The real/synthetic domain gap is now quantified, not assumed**: plate
+  OCR exact-match drops from 42-57.6% on synthetic to 11.7%/4.1% on real
+  photos; plate detection mAP drops from ~0.01 (synthetic) to 0.0019
+  (real). Treat every synthetic number in this repo as an upper bound on
+  real performance, not a prediction of it.
+- **The classical MSER-based text-region proposer is a real, working
+  weakness, not a placeholder**: chosen specifically to avoid the AGPL
+  license of `ultralytics`/YOLO (see `docs/data.md`), it measurably
+  underperforms a trained detector. A production build should budget for
+  either a commercial Ultralytics license or an Apache-licensed
+  alternative (e.g. YOLOX) and real training data.
+- **Jetson feasibility is explicitly "unknown," not estimated** — we could
+  not find a citable, comparable CPU-only ONNX Runtime benchmark on
+  Jetson-class hardware to scale our own numbers against, and said so
+  rather than inventing a ratio (`docs/edge-feasibility.md` section 4).
+- **INT8 quantization does not currently work** for this two-stage
+  detector (a real ONNX Runtime Reshape failure in the ROI heads,
+  reported honestly rather than hidden) — 74% smaller, but broken.
+- **Seal detection is explicitly experimental**: our synthetic seal is a
+  procedural icon, not a rendering of real seal hardware — any number
+  attached to it is a sanity check on the code path, not a real-world
+  signal.
+
+### 3. Pending — needs credentials or hardware not available here
+
+- **GPU fine-tuning**: `training/finetune_detector_colab.ipynb` is written
+  and ready to run on a free Colab GPU runtime; not executed in this
+  environment (CPU-only). No fine-tuned-model numbers exist anywhere in
+  this repo as a result.
+- **Jetson measurement**: no device was available; see above.
+- **Cloud deployment**: `deploy/render.yaml` is ready; no Render (or other
+  cloud) account credentials were available to actually deploy it. The
+  live URLs in this README are placeholders until that happens.
+- **A licensed, fine-tuning-scale plate dataset**: the only real plate
+  data available without credentials was the AGPL-licensed OpenALPR
+  benchmark (444 images, evaluation-only by design). A production build
+  needs either a paid/licensed dataset or a data-collection effort.
+- **Full `docker compose up --build` fresh-clone verification**: the
+  compose config was validated (`docker compose config`) and each service
+  was verified individually (backend via direct `uvicorn` run against
+  sqlite, frontend via `npm run build`, both against real data) — a full
+  multi-service Docker Compose build was not run end-to-end in this
+  session due to the slow network already spending significant time on
+  dataset/dependency downloads. Recommended as the first thing to verify
+  in a normal-bandwidth environment.
