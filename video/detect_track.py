@@ -1,4 +1,9 @@
-"""Run a COCO-pretrained detector over a video, track objects, write Parquet.
+"""Run a pretrained detector over a video, track objects, write Parquet.
+
+Detector: MobileNet-SSD (Caffe, trained on PASCAL VOC) through OpenCV's DNN module.
+The torchvision COCO weights used elsewhere in this repo could not be downloaded
+in the environment this module was built in, so this uses weights fetched from
+the chuanqi305/MobileNet-SSD GitHub repo instead (see video/models/README.md).
 
 Usage:
     python -m video.detect_track path/to/video.avi --out video/results/detections.parquet --stride 3
@@ -16,24 +21,34 @@ import pyarrow.parquet as pq
 
 from video.tracker import IouTracker
 
-PERSON, CAR, BUS, TRUCK, MOTORCYCLE, BICYCLE = 1, 3, 6, 8, 4, 2
-KEEP = {PERSON: "person", CAR: "car", BUS: "bus", TRUCK: "truck", MOTORCYCLE: "motorcycle", BICYCLE: "bicycle"}
+VOC = ["background", "aeroplane", "bicycle", "bird", "boat", "bottle", "bus", "car", "cat", "chair", "cow",
+       "diningtable", "dog", "horse", "motorbike", "person", "pottedplant", "sheep", "sofa", "train", "tvmonitor"]
+KEEP = {"person", "car", "bus", "bicycle", "motorbike"}
+MODEL_DIR = Path(__file__).parent / "models"
 
 
-def load_detector(device: str = "cpu"):
-    import torch
-    from torchvision.models.detection import (
-        FasterRCNN_MobileNet_V3_Large_FPN_Weights,
-        fasterrcnn_mobilenet_v3_large_fpn,
-    )
-
-    weights = FasterRCNN_MobileNet_V3_Large_FPN_Weights.DEFAULT
-    model = fasterrcnn_mobilenet_v3_large_fpn(weights=weights).eval().to(device)
-    return torch, model, weights.transforms()
+def load_detector():
+    return cv2.dnn.readNetFromCaffe(str(MODEL_DIR / "MobileNetSSD_deploy.prototxt"),
+                                    str(MODEL_DIR / "MobileNetSSD_deploy.caffemodel"))
 
 
-def run(video_path: str, out_path: str, stride: int = 3, score_threshold: float = 0.6) -> dict:
-    torch, model, transforms = load_detector()
+def detect(net, frame_bgr, score_threshold):
+    h, w = frame_bgr.shape[:2]
+    blob = cv2.dnn.blobFromImage(cv2.resize(frame_bgr, (300, 300)), 0.007843, (300, 300), 127.5)
+    net.setInput(blob)
+    out = net.forward()[0, 0]
+    boxes, labels, scores = [], [], []
+    for _, cls, conf, x1, y1, x2, y2 in out:
+        name = VOC[int(cls)]
+        if conf >= score_threshold and name in KEEP:
+            boxes.append([x1 * w, y1 * h, x2 * w, y2 * h])
+            labels.append(name)
+            scores.append(float(conf))
+    return boxes, labels, scores
+
+
+def run(video_path: str, out_path: str, stride: int = 2, score_threshold: float = 0.3) -> dict:
+    net = load_detector()
     cap = cv2.VideoCapture(video_path)
     fps = cap.get(cv2.CAP_PROP_FPS) or 25.0
     n_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
@@ -48,21 +63,9 @@ def run(video_path: str, out_path: str, stride: int = 3, score_threshold: float 
         idx += 1
         if idx % stride:
             continue
-        rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-        tensor = transforms(torch.from_numpy(rgb).permute(2, 0, 1))
         t0 = time.perf_counter()
-        with torch.no_grad():
-            out = model([tensor])[0]
+        boxes, labels, scores = detect(net, frame, score_threshold)
         latencies.append(time.perf_counter() - t0)
-        h, w = rgb.shape[:2]
-        th, tw = tensor.shape[1:]
-        sx, sy = w / tw, h / th
-        boxes, labels, scores = [], [], []
-        for b, l, s in zip(out["boxes"].numpy(), out["labels"].numpy(), out["scores"].numpy()):
-            if s >= score_threshold and int(l) in KEEP:
-                boxes.append([b[0] * sx, b[1] * sy, b[2] * sx, b[3] * sy])
-                labels.append(KEEP[int(l)])
-                scores.append(float(s))
         for tid, b, l, s in zip(tracker.update(idx, boxes), boxes, labels, scores):
             for k, v in zip(cols, (idx, idx / fps, tid, l, s, *map(float, b))):
                 cols[k].append(v)
@@ -83,6 +86,6 @@ if __name__ == "__main__":
     ap = argparse.ArgumentParser()
     ap.add_argument("video")
     ap.add_argument("--out", default="video/results/detections.parquet")
-    ap.add_argument("--stride", type=int, default=3)
+    ap.add_argument("--stride", type=int, default=2)
     a = ap.parse_args()
     print(run(a.video, a.out, a.stride))
