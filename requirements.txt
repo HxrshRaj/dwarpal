@@ -3,7 +3,7 @@
 
 # Core
 numpy
-opencv-python
+opencv-python<5  # video/ needs 4.x (Caffe importer)
 pillow
 requests
 tqdm
@@ -42,3 +42,10 @@ alembic
 # Tests
 pytest
 httpx
+
+# video/ module
+pyarrow
+polars
+pyspark==4.0.1
+jax
+tensorflow-cpu

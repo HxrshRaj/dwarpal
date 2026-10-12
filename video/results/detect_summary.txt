@@ -1,0 +1,1 @@
+{'video': 'vtest.avi', 'fps': 10.0, 'frames_in_video': 795, 'stride': 2, 'frames_processed': 398, 'detections': 1207, 'tracks': 315, 'latency_ms_mean': 51.06772451004237, 'latency_ms_p95': 71.62070579997811}
